@@ -1,6 +1,6 @@
 # Tusklo Launcher
 
-<img width="1280" height="640" alt="Новый проект" src="https://github.com/user-attachments/assets/52f13c94-b5c9-439c-8a14-1a2b4876f32b" />
+<img width="650" height="125" alt="Снимок экрана (56)" src="https://github.com/user-attachments/assets/9d77d591-7ff5-445a-84a5-6c0a308eafe0" />
 
 Бесплатный лаунчер Minecraft: Java Edition. Поиск и установка модов через Modrinth и CurseForge.
 
