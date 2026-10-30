@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Tusklo Launcher</title>
+<style>
+@font-face{font-family:"MC";src:url("assets/minecraft.ttf") format("truetype");font-display:block}
+:root{
+  --bg:#1e1e1f;--panel:#313233;--panel2:#3a3b3c;--line:#48494a;
+  --text:#fff;--dim:#b1b2b5;
+  --g:#3c8527;--gl:#52a535;--gd:#2a641c;--red:#d9453a;
+  --font:"MC","Noto Sans","Segoe UI",system-ui,Arial,sans-serif;
+}
+*{box-sizing:border-box;margin:0}
+html,body{height:100%}
+body{background:var(--bg);color:var(--text);font:16px/1.35 var(--font);overflow:hidden;display:flex;flex-direction:column}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--gl);outline-offset:2px}
+.app{display:flex;flex:1;min-height:0}
+
+/* своя панель окна */
+.tb{height:36px;flex:none;background:#171718;border-bottom:1px solid #000;display:flex;align-items:center;gap:10px;padding-left:12px;-webkit-app-region:drag;user-select:none}
+.tb .cube{width:18px;height:18px}
+.tt{flex:1;color:var(--dim);letter-spacing:1px}
+.wb{-webkit-app-region:no-drag;width:46px;height:36px;border:0;background:none;color:var(--dim);cursor:pointer;display:grid;place-items:center}
+.wb:hover{background:#2c2d2e;color:#fff}
+.wb.x:hover{background:#c42b1c}
+.wb svg{width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:1.6}
+
+/* левая колонка */
+.side{width:220px;background:#171718;border-right:1px solid #000;display:flex;flex-direction:column}
+.ed{display:flex;align-items:center;gap:10px;background:none;border:0;border-left:4px solid transparent;padding:12px;text-align:left;cursor:pointer;color:var(--dim);width:100%}
+.ed:hover{background:#232324;color:var(--text)}
+.ed.on{background:#232324;color:var(--text);border-left-color:var(--gl)}
+.ed small{display:block;font-size:16px;color:var(--dim)}
+.cube{flex:none;width:30px;height:30px;background:linear-gradient(#5f9a45 0 32%,#7a5436 32%);box-shadow:inset -4px -4px 0 rgba(0,0,0,.28),inset 3px 3px 0 rgba(255,255,255,.14)}
+.grow{flex:1}
+.acc{display:flex;gap:10px;align-items:center;padding:12px;border-top:1px solid #000}
+.avatar{width:30px;height:30px;background:linear-gradient(#8a5a3c 0 45%,#4b3626 45%);box-shadow:inset 0 -6px 0 #2f6fbb}
+.acc b{display:block}.acc small{color:var(--dim);font-size:16px}
+
+/* основное */
+.content{flex:1;display:flex;flex-direction:column;min-width:0}
+.top{background:var(--panel);border-bottom:1px solid #000;display:flex;justify-content:center;gap:6px}
+.tab{background:none;border:0;padding:14px 22px;color:var(--dim);cursor:pointer;border-bottom:3px solid transparent}
+.tab:hover{color:var(--text)}
+.tab.on{color:var(--text);border-bottom-color:var(--gl)}
+.views{flex:1;overflow:auto;position:relative}
+.view{display:none;min-height:100%}.view.on{display:block}
+
+/* Играть */
+#v-play{position:relative;background:#0b0d12 url(assets/bg.jpg) center/cover no-repeat}
+#v-play:after{content:"";position:absolute;inset:0;background:linear-gradient(rgba(0,0,0,.4),transparent 32%,transparent 60%,rgba(0,0,0,.55))}
+.logo{position:relative;z-index:2;text-align:center;padding-top:7vh}
+.logo h1{font:400 clamp(48px,7vw,80px)/1 var(--font);letter-spacing:6px;text-indent:calc(6px + .125em);color:#ececec;
+  text-shadow:2px 0 #000,-2px 0 #000,0 2px #000,0 -2px #000,2px 2px #000,-2px -2px #000,2px -2px #000,-2px 2px #000}
+.logo span{display:inline-flex;align-items:center;justify-content:center;height:32px;margin-top:8px;padding:0 14px 0 22px;font:400 16px/16px var(--font);letter-spacing:6px;color:#e8e8e8;background:#5a5a5a;border:2px solid #222;box-shadow:inset 0 -3px 0 #3d3d3d}
+
+/* нижняя панель */
+.bar{height:92px;flex:none;background:var(--panel);border-top:1px solid #000;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:0 24px;gap:16px}
+.sel select{width:260px;max-width:100%;background:#1e1e1f;border:2px solid #000;padding:9px 10px;cursor:pointer}
+.sel label{display:block;color:var(--dim);margin-bottom:3px}
+.play{min-width:260px;padding:10px 24px;border:2px solid #000;background:var(--g);cursor:pointer;box-shadow:inset 0 3px 0 var(--gl),inset 0 -4px 0 var(--gd);text-align:center}
+.play b{display:block;font-size:24px;font-weight:400;letter-spacing:2px;text-shadow:0 2px 0 rgba(0,0,0,.4)}
+.play small{display:block;color:#d5e9cd}
+.play:hover:not(:disabled){background:#46992f}
+.play:active:not(:disabled){box-shadow:inset 0 -2px 0 var(--gd),inset 0 2px 0 var(--gl);padding-top:12px}
+.play:disabled{filter:grayscale(.5) brightness(.8);cursor:wait}
+.prog{justify-self:end;width:260px;max-width:100%;color:var(--dim)}
+.pbar{height:8px;background:#111;border:1px solid #000;margin-bottom:5px}
+.pbar i{display:block;height:100%;width:0;background:var(--gl);transition:width .15s}
+#log{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+
+/* общие */
+.pad{padding:24px 32px}
+h2{font-size:24px;font-weight:400;margin-bottom:16px}
+.btn{background:var(--panel2);border:2px solid #000;padding:8px 16px;cursor:pointer;box-shadow:inset 0 2px 0 rgba(255,255,255,.12),inset 0 -3px 0 rgba(0,0,0,.35)}
+.btn:hover{background:#4a4b4c}
+.btn.g{background:var(--g);box-shadow:inset 0 2px 0 var(--gl),inset 0 -3px 0 var(--gd)}
+.btn.g:hover{background:#46992f}
+.btn:disabled{opacity:.55;cursor:wait}
+input[type=text],input[type=password],input[type=number],.field select{width:100%;background:#1e1e1f;border:2px solid #000;padding:8px 10px}
+label{display:block;color:var(--dim);margin-bottom:4px}
+.hint{color:var(--dim);margin-top:4px}.hint a{color:var(--gl)}
+.chk{display:inline-flex;gap:8px;align-items:center;margin:6px 14px 0 0;color:var(--dim)}
+.chk.s{color:var(--text);margin:0}
+.chk input{width:18px;height:18px;accent-color:var(--gl)}
+
+/* установки */
+.head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+.row{display:grid;grid-template-columns:48px 1fr auto;gap:14px;align-items:center;padding:12px 14px;background:var(--panel);border:2px solid #000;margin-bottom:8px}
+.row.cur{border-color:var(--gl)}
+.row .cube{width:44px;height:44px}
+.row small{color:var(--dim);display:block;font-size:16px}
+.act{display:flex;gap:8px;align-items:center}
+.mini{width:140px}.mini .pbar{margin:0}
+.ok{color:var(--gl)}
+dialog{margin:auto;background:var(--panel);color:var(--text);border:2px solid #000;padding:22px;width:420px;max-width:92vw}
+dialog::backdrop{background:rgba(0,0,0,.65)}
+dialog .field{margin-bottom:14px}
+.dlg-act{display:flex;justify-content:flex-end;gap:10px;margin-top:8px}
+
+/* моды */
+.sbar{display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap}.sbar input{flex:1;min-width:160px}
+.seg{display:flex}
+.seg button{background:var(--panel2);border:2px solid #000;padding:8px 14px;cursor:pointer;color:var(--dim)}
+.seg button.on[data-k]{background:var(--g);color:#fff}
+.seg button.on[data-s=modrinth]{background:#1bd96a;color:#04200f}
+.seg button.on[data-s=curseforge]{background:#f16436;color:#2a0c02}
+.layout{display:grid;grid-template-columns:1fr 240px;gap:20px;align-items:start}
+.mod{display:grid;grid-template-columns:56px 1fr auto;gap:14px;align-items:center;padding:12px;background:var(--panel);border:2px solid #000;margin-bottom:8px}
+.mod img,.ph{width:56px;height:56px;background:#1e1e1f;object-fit:cover}
+.mod h3{font-size:16px;font-weight:400}
+.mod p{color:var(--dim);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.meta{color:var(--dim)}
+.sidebox{background:var(--panel);border:2px solid #000;padding:14px;position:sticky;top:0}
+.sidebox h3{font-size:16px;font-weight:400;margin-bottom:8px}
+.inst{display:flex;justify-content:space-between;gap:6px;padding:4px 0;word-break:break-all}
+.inst button{background:none;border:0;color:var(--red);cursor:pointer}
+.empty{color:var(--dim);padding:24px 0}
+.form{max-width:480px;display:grid;gap:18px}
+.toast{position:fixed;right:20px;bottom:110px;background:var(--panel2);border:2px solid #000;border-left:5px solid var(--gl);padding:12px 16px;max-width:360px;display:none;z-index:9}
+.toast.err{border-left-color:var(--red)}
+@media (max-width:1000px){.layout{grid-template-columns:1fr}.sidebox{position:static}.bar{grid-template-columns:1fr auto}.prog{display:none}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="tb">
+  <span class="cube"></span><span class="tt">TUSKLO LAUNCHER</span>
+  <button class="wb" data-w="min" aria-label="Minimize"><svg viewBox="0 0 12 12"><path d="M1 6h10"/></svg></button>
+  <button class="wb" data-w="max" aria-label="Maximize"><svg viewBox="0 0 12 12"><rect x="1.5" y="1.5" width="9" height="9"/></svg></button>
+  <button class="wb x" data-w="close" aria-label="Close"><svg viewBox="0 0 12 12"><path d="M1 1l10 10M11 1L1 11"/></svg></button>
+</div>
+
+<div class="app">
+  <aside class="side">
+    <button class="ed on" id="edJava"><span class="cube"></span><span>Minecraft<small>Java Edition</small></span></button>
+    <div class="grow"></div>
+    <button class="ed" id="edSet"><span style="width:30px;text-align:center">⚙</span><span data-i="settings"></span></button>
+    <div class="acc"><span class="avatar"></span><div><b id="who">—</b><small id="mode"></small></div></div>
+  </aside>
+
+  <div class="content">
+    <header class="top">
+      <button class="tab on" data-v="play" data-i="play"></button>
+      <button class="tab" data-v="inst" data-i="inst"></button>
+      <button class="tab" data-v="mods" data-i="mods"></button>
+    </header>
+
+    <div class="views">
+      <div class="view on" id="v-play"><div class="logo"><h1>TUSKLO</h1><span>LAUNCHER</span></div></div>
+
+      <div class="view" id="v-inst"><div class="pad">
+        <div class="head"><h2 style="margin:0" data-i="inst"></h2><button class="btn g" id="newInst" data-i="newInst"></button></div>
+        <div id="instList"></div>
+      </div></div>
+
+      <div class="view" id="v-mods"><div class="pad">
+        <h2><span id="kt"></span>: <span id="ctx"></span></h2>
+        <div class="sbar">
+          <div class="seg" id="kind"><button data-k="mod" class="on" data-i="modsT"></button><button data-k="resourcepack" data-i="packsT"></button></div>
+          <div class="seg" id="seg"><button data-s="modrinth" class="on">Modrinth</button><button data-s="curseforge">CurseForge</button></div>
+          <input type="text" id="q">
+          <button class="btn g" id="sbtn" data-i="find"></button>
+        </div>
+        <div class="layout">
+          <div id="res"></div>
+          <aside class="sidebox"><h3 data-i="installedH"></h3><div id="modInst"></div>
+            <button class="btn" style="margin-top:10px;width:100%" id="open" data-i="openFolder"></button></aside>
+        </div>
+      </div></div>
+
+      <div class="view" id="v-set"><div class="pad">
+        <h2 data-i="settings"></h2>
+        <div class="form">
+          <div class="field"><label for="lang" data-i="language"></label>
+            <select id="lang"><option value="ru">Русский</option><option value="en">English</option><option value="uk">Українська</option></select>
+            <div class="hint" data-i="langHint"></div></div>
+          <div><label class="chk s"><input type="checkbox" id="closeOn"><span data-i="closeOn"></span></label>
+            <div class="hint" data-i="closeHint"></div></div>
+          <div><label data-i="account"></label><button class="btn g" id="ms" data-i="msLogin"></button>
+            <div class="hint" data-i="msHint"></div></div>
+          <div class="field"><label for="nick" data-i="offNick"></label><input type="text" id="nick">
+            <div class="hint" data-i="offHint"></div>
+            <button class="btn" id="off" style="margin-top:8px" data-i="useOff"></button></div>
+          <div class="field"><label for="ram" data-i="ram"></label><input type="number" id="ram" min="1" max="32"></div>
+          <div class="field"><label for="key" data-i="cfKey"></label><input type="password" id="key">
+            <div class="hint"><span data-i="cfHint"></span> <a href="https://console.curseforge.com" target="_blank">console.curseforge.com</a></div></div>
+          <button class="btn g" id="save" data-i="save"></button>
+        </div>
+      </div></div>
+    </div>
+
+    <footer class="bar">
+      <div class="sel"><label for="cur" data-i="installation"></label><select id="cur"></select></div>
+      <button class="play" id="go"><b></b><small id="sub"></small></button>
+      <div class="prog"><div class="pbar"><i id="pb"></i></div><span id="log"></span></div>
+    </footer>
+  </div>
+</div>
+
+<dialog id="dlg">
+  <h2 data-i="newInst"></h2>
+  <div class="field"><label for="nName" data-i="name"></label><input type="text" id="nName"></div>
+  <div class="field"><label for="nVer" data-i="version"></label><select id="nVer"></select>
+    <label class="chk"><input type="checkbox" id="fSnap"><span data-i="snaps"></span></label>
+    <label class="chk"><input type="checkbox" id="fOld"><span data-i="oldV"></span></label></div>
+  <div class="field"><label for="nLdr" data-i="loader"></label>
+    <select id="nLdr"><option value="vanilla" data-i="vanilla"></option><option value="fabric">Fabric</option><option value="quilt">Quilt</option></select></div>
+  <div class="dlg-act"><button class="btn" id="nCancel" data-i="cancel"></button><button class="btn g" id="nCreate" data-i="create"></button></div>
+</dialog>
+<div class="toast" id="toast"></div>
+
+<script>
+const I18N={
+ru:{settings:'Настройки',play:'Играть',inst:'Установки',mods:'Моды и ресурспаки',installation:'Установка',playBtn:'ИГРАТЬ',starting:'ЗАПУСК…',ready:'Готов к запуску',willDl:'будет скачана',offline:'Офлайн',newInst:'Новая установка',dled:'скачана',notDled:'не скачана',download:'Скачать',unlist:'Убрать из списка',name:'Название',version:'Версия',snaps:'Снапшоты',oldV:'Старые версии',loader:'Загрузчик',vanilla:'Без модов',cancel:'Отмена',create:'Создать',untitled:'Без названия',modsT:'Моды',packsT:'Ресурспаки',find:'Найти',modPh:'Название мода, например Sodium',packPh:'Название ресурспака, например Faithful',install:'Установить',dling:'Скачиваем…',installed:'Установлено',installedH:'Установлено',none:'Пока пусто',openFolder:'Открыть папку игры',searching:'Ищем…',notFound:'Ничего не найдено для этой версии. Попробуй другой запрос.',dlsN:'скачиваний',mln:'млн',thou:'тыс.',packHint:'Включи в игре: Настройки → Ресурспаки',account:'Аккаунт',msLogin:'Войти через Microsoft',msHint:'Лицензионный вход: работает на любых серверах.',offNick:'Офлайн-ник',offHint:'Режим без лицензии: одиночная игра и локальные серверы.',useOff:'Использовать офлайн-ник',ram:'Память, ГБ',cfKey:'API-ключ CurseForge',cfHint:'Ключ уже встроен, можно заменить своим:',language:'Язык (лаунчер и игра)',langHint:'Язык игры применяется при следующем запуске.',closeOn:'Закрывать лаунчер при запуске игры',closeHint:'Освобождает оперативную память. Лаунчер откроется снова, если игра завершится с ошибкой.',save:'Сохранить',saved:'Сохранено',dlDone:'Версия {v} скачана',dlFail:'Не удалось скачать: ',dlProg:'Скачивание {id}: {p}%',javaProg:'Скачивание Java: {p}%',closed:'Игра закрыта',crashed:'Игра завершилась с ошибкой',loggedIn:'Вход выполнен: ',loginFail:'Вход не выполнен: ',offOn:'Офлайн-режим включён',noVers:'Нет связи со списком версий Mojang'},
+en:{settings:'Settings',play:'Play',inst:'Installations',mods:'Mods & resource packs',installation:'Installation',playBtn:'PLAY',starting:'STARTING…',ready:'Ready to play',willDl:'will be downloaded',offline:'Offline',newInst:'New installation',dled:'downloaded',notDled:'not downloaded',download:'Download',unlist:'Remove from list',name:'Name',version:'Version',snaps:'Snapshots',oldV:'Old versions',loader:'Loader',vanilla:'Vanilla (no mods)',cancel:'Cancel',create:'Create',untitled:'Untitled',modsT:'Mods',packsT:'Resource packs',find:'Search',modPh:'Mod name, e.g. Sodium',packPh:'Resource pack name, e.g. Faithful',install:'Install',dling:'Downloading…',installed:'Installed',installedH:'Installed',none:'Nothing yet',openFolder:'Open game folder',searching:'Searching…',notFound:'Nothing found for this version. Try another query.',dlsN:'downloads',mln:'M',thou:'K',packHint:'Enable it in game: Options → Resource Packs',account:'Account',msLogin:'Sign in with Microsoft',msHint:'Licensed sign-in: works on any server.',offNick:'Offline nickname',offHint:'Unlicensed mode: singleplayer and local servers only.',useOff:'Use offline nickname',ram:'Memory, GB',cfKey:'CurseForge API key',cfHint:'The key is built in; you can replace it with your own:',language:'Language (launcher and game)',langHint:'The game language is applied on the next launch.',closeOn:'Close the launcher when the game starts',closeHint:'Frees up RAM. The launcher reopens if the game crashes.',save:'Save',saved:'Saved',dlDone:'Version {v} downloaded',dlFail:'Download failed: ',dlProg:'Downloading {id}: {p}%',javaProg:'Downloading Java: {p}%',closed:'Game closed',crashed:'The game exited with an error',loggedIn:'Signed in: ',loginFail:'Sign-in failed: ',offOn:'Offline mode enabled',noVers:'Cannot reach the Mojang version list'},
+uk:{settings:'Налаштування',play:'Грати',inst:'Встановлення',mods:'Моди та ресурспаки',installation:'Встановлення',playBtn:'ГРАТИ',starting:'ЗАПУСК…',ready:'Готово до запуску',willDl:'буде завантажено',offline:'Офлайн',newInst:'Нове встановлення',dled:'завантажено',notDled:'не завантажено',download:'Завантажити',unlist:'Прибрати зі списку',name:'Назва',version:'Версія',snaps:'Снапшоти',oldV:'Старі версії',loader:'Завантажувач',vanilla:'Без модів',cancel:'Скасувати',create:'Створити',untitled:'Без назви',modsT:'Моди',packsT:'Ресурспаки',find:'Знайти',modPh:'Назва моду, наприклад Sodium',packPh:'Назва ресурспаку, наприклад Faithful',install:'Встановити',dling:'Завантажуємо…',installed:'Встановлено',installedH:'Встановлено',none:'Поки порожньо',openFolder:'Відкрити теку гри',searching:'Шукаємо…',notFound:'Нічого не знайдено для цієї версії. Спробуй інший запит.',dlsN:'завантажень',mln:'млн',thou:'тис.',packHint:'Увімкни в грі: Налаштування → Ресурспаки',account:'Акаунт',msLogin:'Увійти через Microsoft',msHint:'Ліцензійний вхід: працює на будь-яких серверах.',offNick:'Офлайн-нік',offHint:'Режим без ліцензії: одиночна гра та локальні сервери.',useOff:'Використати офлайн-нік',ram:'Пам’ять, ГБ',cfKey:'API-ключ CurseForge',cfHint:'Ключ уже вбудовано, можна замінити своїм:',language:'Мова (лаунчер і гра)',langHint:'Мова гри застосовується під час наступного запуску.',closeOn:'Закривати лаунчер під час запуску гри',closeHint:'Звільняє оперативну пам’ять. Лаунчер відкриється знову, якщо гра завершиться з помилкою.',save:'Зберегти',saved:'Збережено',dlDone:'Версію {v} завантажено',dlFail:'Не вдалося завантажити: ',dlProg:'Завантаження {id}: {p}%',javaProg:'Завантаження Java: {p}%',closed:'Гру закрито',crashed:'Гра завершилася з помилкою',loggedIn:'Вхід виконано: ',loginFail:'Вхід не виконано: ',offOn:'Офлайн-режим увімкнено',noVers:'Немає зв’язку зі списком версій Mojang'}
+};
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const LD={vanilla:'Vanilla',fabric:'Fabric',quilt:'Quilt'};
+let S,V=[],have=new Set(),src='modrinth',kind='mod',found=[],busy=null,dlp={},searching=false;
+const t=(k,v={})=>{let s=(I18N[S&&S.lang]||I18N.ru)[k]??I18N.ru[k]??k;for(const x in v)s=s.replace('{'+x+'}',v[x]);return s};
+const toast=(m,e)=>{m=String(m).replace(/Error invoking remote method '[^']+': (Error: )?/,'');const el=$('#toast');el.textContent=m;el.className='toast'+(e?' err':'');el.style.display='block';clearTimeout(el._h);el._h=setTimeout(()=>el.style.display='none',4500)};
+const fmt=n=>n>=1e6?(n/1e6).toFixed(1)+' '+t('mln'):n>=1e3?Math.round(n/1e3)+' '+t('thou'):n;
+const cur=()=>S.installs.find(i=>i.id===S.sel)||S.installs[0];
+const label=i=>`${LD[i.loader]} ${i.version}`;
+
+/* окно */
+$$('.wb').forEach(b=>b.onclick=()=>api.call('win',b.dataset.w));
+
+/* язык */
+function applyLang(){
+  document.documentElement.lang=S.lang;
+  $$('[data-i]').forEach(e=>e.textContent=t(e.dataset.i));
+  $('#kt').textContent=t(kind==='mod'?'modsT':'packsT');
+  $('#q').placeholder=t(kind==='mod'?'modPh':'packPh');
+  who();drawBar();drawInst();ctx();renderRes();listMods();
+}
+$('#lang').onchange=async e=>{S=await api.call('set',{lang:e.target.value});applyLang();$('#log').textContent=t('ready')};
+$('#closeOn').onchange=async e=>{S=await api.call('set',{closeOnLaunch:e.target.checked})};
+
+/* навигация */
+function show(v){
+  $$('.tab').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
+  $('#edJava').classList.toggle('on',v!=='set');$('#edSet').classList.toggle('on',v==='set');
+  $$('.view').forEach(x=>x.classList.toggle('on',x.id==='v-'+v));
+  if(v==='inst')drawInst();
+  if(v==='mods'){ctx();listMods();if(!found.length)search()}
+}
+$$('.tab').forEach(b=>b.onclick=()=>show(b.dataset.v));
+$('#edJava').onclick=()=>show('play');$('#edSet').onclick=()=>show('set');
+
+function who(){$('#who').textContent=S.nick;$('#mode').textContent=S.mode==='ms'?'Microsoft':t('offline')}
+function drawBar(){
+  $('#cur').innerHTML=S.installs.map(i=>`<option value="${esc(i.id)}">${esc(i.name)} (${esc(label(i))})</option>`).join('');
+  $('#cur').value=S.sel;
+  const i=cur();$('#sub').textContent=have.has(i.version)?label(i):label(i)+' · '+t('willDl');
+  $('#go b').textContent=busy==='play'?t('starting'):t('playBtn');
+  $('#go').disabled=!!busy;
+}
+async function pick(id){S=await api.call('select',{installs:S.installs,sel:id});found=[];drawBar();drawInst()}
+$('#cur').onchange=e=>pick(e.target.value);
+
+/* скачивание и запуск */
+async function download(i){
+  if(busy)return;busy=i.version;dlp[i.version]=0;drawBar();drawInst();
+  try{await api.call('download',{id:i.version,loader:i.loader});have=new Set(await api.call('installed'));toast(t('dlDone',{v:i.version}))}
+  catch(e){toast(t('dlFail')+e.message,1);throw e}
+  finally{busy=null;delete dlp[i.version];$('#pb').style.width='0';drawBar();drawInst()}
+}
+async function play(){
+  const i=cur();
+  try{if(!have.has(i.version))await download(i)}catch{return}
+  busy='play';drawBar();
+  try{await api.call('play')}catch(e){toast(e.message,1);ended()}
+}
+const ended=()=>{busy=null;$('#pb').style.width='0';drawBar()};
+$('#go').onclick=play;
+api.on('dl',e=>{dlp[e.id]=e.done/e.total;const p=Math.round(dlp[e.id]*100);
+  if(busy===e.id||e.id==='java'){$('#pb').style.width=p+'%';$('#log').textContent=e.id==='java'?t('javaProg',{p}):t('dlProg',{id:e.id,p})}
+  const m=document.querySelector(`[data-p="${CSS.escape(e.id)}"]`);if(m)m.style.width=p+'%'});
+api.on('progress',e=>{if(e.total)$('#pb').style.width=Math.round(e.task/e.total*100)+'%'});
+api.on('log',m=>{$('#log').textContent=m.trim().split('\n').pop()});
+api.on('closed',()=>{ended();$('#log').textContent=t('closed')});
+api.on('crashed',()=>{ended();$('#log').textContent=t('crashed');toast(t('crashed'),1)});
+
+/* установки */
+function drawInst(){
+  $('#instList').innerHTML=S.installs.map(i=>{
+    const ok=have.has(i.version),d=busy===i.version;
+    return `<div class="row ${i.id===S.sel?'cur':''}"><span class="cube"></span>
+      <div><b>${esc(i.name)}</b><small>${esc(label(i))} · ${ok?`<span class="ok">${t('dled')}</span>`:t('notDled')}</small></div>
+      <div class="act">${d?`<div class="mini"><div class="pbar"><i data-p="${esc(i.version)}" style="width:${Math.round((dlp[i.version]||0)*100)}%"></i></div></div>`
+        :`${ok?'':`<button class="btn" data-a="dl" data-id="${esc(i.id)}">${t('download')}</button>`}
+          <button class="btn g" data-a="play" data-id="${esc(i.id)}">${t('play')}</button>
+          ${S.installs.length>1?`<button class="btn" data-a="del" data-id="${esc(i.id)}" title="${esc(t('unlist'))}">✕</button>`:''}`}</div></div>`}).join('');
+}
+$('#instList').onclick=async e=>{
+  const b=e.target.closest('button[data-a]');if(!b)return;
+  const id=b.dataset.id;await pick(id);
+  if(b.dataset.a==='dl')download(cur()).catch(()=>{});
+  if(b.dataset.a==='play'){show('play');play()}
+  if(b.dataset.a==='del'){const l=S.installs.filter(x=>x.id!==id);S=await api.call('select',{installs:l,sel:l[0].id});drawBar();drawInst()}
+};
+function fillVers(){
+  const k=new Set(['release']);if($('#fSnap').checked)k.add('snapshot');if($('#fOld').checked){k.add('old_beta');k.add('old_alpha')}
+  $('#nVer').innerHTML=V.filter(v=>k.has(v.type)).map(v=>`<option>${esc(v.id)}</option>`).join('');
+}
+$('#fSnap').onchange=$('#fOld').onchange=fillVers;
+$('#newInst').onclick=()=>{$('#nName').value='';fillVers();$('#dlg').showModal()};
+$('#nCancel').onclick=()=>$('#dlg').close();
+$('#nCreate').onclick=async()=>{
+  const i={id:'i'+Date.now().toString(36),name:$('#nName').value.trim()||t('untitled'),version:$('#nVer').value,loader:$('#nLdr').value};
+  S=await api.call('select',{installs:[...S.installs,i],sel:i.id});$('#dlg').close();drawBar();drawInst();
+  if(!have.has(i.version))download(i).catch(()=>{});
+};
+
+/* моды и ресурспаки */
+const ctx=()=>$('#ctx').textContent=`${cur().name} (${kind==='mod'?label(cur()):cur().version})`;
+$('#kind').onclick=e=>{const k=e.target.dataset.k;if(!k)return;kind=k;found=[];
+  $$('#kind button').forEach(b=>b.classList.toggle('on',b.dataset.k===k));
+  $('#kt').textContent=t(k==='mod'?'modsT':'packsT');$('#q').placeholder=t(k==='mod'?'modPh':'packPh');ctx();listMods();search()};
+$('#seg').onclick=e=>{const s=e.target.dataset.s;if(!s)return;src=s;$$('#seg button').forEach(b=>b.classList.toggle('on',b.dataset.s===s));search()};
+$('#sbtn').onclick=()=>search();
+$('#q').onkeydown=e=>{if(e.key==='Enter')search()};
+function renderRes(){
+  if(searching){$('#res').innerHTML=`<div class="empty">${t('searching')}</div>`;return}
+  $('#res').innerHTML=found.length?found.map((m,i)=>`<div class="mod">${m.icon?`<img src="${esc(m.icon)}" alt="">`:'<div class="ph"></div>'}
+    <div><h3>${esc(m.title)}</h3><p>${esc(m.desc)}</p><div class="meta">${esc(m.author)} · ${t('dlsN')}: ${fmt(m.downloads)}</div></div>
+    <button class="btn g" data-n="${i}">${t('install')}</button></div>`).join(''):`<div class="empty">${t('notFound')}</div>`;
+}
+async function search(){
+  searching=true;renderRes();
+  try{found=await api.call('search',{src,kind,q:$('#q').value.trim()})}
+  catch(e){found=[];toast(e.message,1)}
+  searching=false;renderRes();
+}
+$('#res').onclick=async e=>{
+  const b=e.target.closest('button[data-n]');if(!b)return;const m=found[b.dataset.n];
+  b.disabled=true;b.textContent=t('dling');
+  try{const f=await api.call('install',{src:m.src,id:m.id,kind});toast(t('installed')+': '+f.join(', ')+(kind==='resourcepack'?'. '+t('packHint'):''));b.textContent=t('installed');listMods()}
+  catch(err){toast(err.message,1);b.disabled=false;b.textContent=t('install')}
+};
+async function listMods(){
+  const l=await api.call('mods',kind);
+  $('#modInst').innerHTML=l.length?l.map(f=>`<div class="inst"><span>${esc(f)}</span><button data-f="${esc(f)}">✕</button></div>`).join(''):`<div class="hint">${t('none')}</div>`;
+}
+$('#modInst').onclick=async e=>{const f=e.target.dataset.f;if(f){await api.call('remove',{kind,f});listMods()}};
+$('#open').onclick=()=>api.call('folder');
+
+/* настройки */
+$('#ms').onclick=async()=>{try{S=await api.call('login');who();$('#nick').value=S.nick;toast(t('loggedIn')+S.nick)}catch(e){toast(t('loginFail')+e.message,1)}};
+$('#off').onclick=async()=>{S=await api.call('set',{mode:'offline',nick:$('#nick').value.trim()||'Player'});who();toast(t('offOn'))};
+$('#save').onclick=async()=>{S=await api.call('set',{ram:+$('#ram').value||4,curseKey:$('#key').value.trim()});toast(t('saved'))};
+
+(async()=>{
+  S=await api.call('state');
+  have=new Set(await api.call('installed'));
+  $('#nick').value=S.nick;$('#ram').value=S.ram;$('#key').value=S.curseKey;$('#lang').value=S.lang;$('#closeOn').checked=S.closeOnLaunch!==false;
+  applyLang();$('#log').textContent=t('ready');
+  try{V=await api.call('versions')}catch{toast(t('noVers'),1)}
+})();
+</script>
+</body>
+</html>

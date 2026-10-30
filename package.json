@@ -1,0 +1,23 @@
+{
+  "name": "tusklo-launcher",
+  "version": "1.0.0",
+  "description": "Бесплатный лаунчер Minecraft с поиском модов в Modrinth и CurseForge",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder"
+  },
+  "dependencies": {
+    "minecraft-launcher-core": "^3.18.2",
+    "msmc": "^5.0.5"
+  },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.0.0"
+  },
+  "build": {
+    "appId": "dev.tusklo.launcher",
+    "productName": "Tusklo Launcher",
+    "files": ["main.js", "preload.js", "index.html", "assets/**"]
+  }
+}
