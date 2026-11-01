@@ -1,6 +1,6 @@
 {
   "name": "tusklo-launcher",
-  "version": "1.0.0",
+  "version": "1.1.1",
   "description": "Бесплатный лаунчер Minecraft с поиском модов в Modrinth и CurseForge",
   "main": "main.js",
   "scripts": {

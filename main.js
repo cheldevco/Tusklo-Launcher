@@ -11,11 +11,11 @@ let cfg = {
   profile: { name: 'main', version: '1.20.1', loader: 'fabric' },
   installs: [{ id: 'main', name: 'Основная', version: '1.20.1', loader: 'fabric' }], sel: 'main',
   mode: 'offline', nick: 'Player', account: null, curseKey: '', ram: 4,
-  lang: 'ru', closeOnLaunch: true,
+  lang: 'ru', closeOnLaunch: true, javaPreset: 'default', javaArgs: '',
 };
 try { cfg = { ...cfg, ...JSON.parse(fs.readFileSync(cfgFile, 'utf8')) }; } catch {}
-const DEFAULT_CF_KEY = '$2a$10$97RosohuBjHvm8dPXRBED.tWFuiQcJrKVIGQq0so6Fl1EZ2o6t3Ja';
-if (!cfg.curseKey) cfg.curseKey = DEFAULT_CF_KEY;
+// Ключ CurseForge API. Чтобы заменить, поменяй значение здесь.
+const CF_KEY = '$2a$10$97RosohuBjHvm8dPXRBED.tWFuiQcJrKVIGQq0so6Fl1EZ2o6t3Ja';
 const save = () => fs.writeFileSync(cfgFile, JSON.stringify(cfg, null, 2));
 
 let win;
@@ -23,19 +23,19 @@ const send = (ch, d) => win && !win.isDestroyed() && win.webContents.send(ch, d)
 
 const nf = (u, o) => (net && net.fetch ? net.fetch(u, o) : fetch(u, o));
 const sleep = ms => new Promise(r => setTimeout(r, ms));
-const get = async (url, headers = {}) => {
+const get = async (url, headers = {}, tries = 3) => {
   for (let a = 1; ; a++) {
     try {
       const r = await nf(url, { headers: { 'User-Agent': UA, ...headers } });
       if (!r.ok) throw new Error('HTTP ' + r.status);
       return await r.json();
     } catch (e) {
-      if (a >= 3) throw new Error(`${e.message} (${url})`);
+      if (a >= tries) throw new Error(`${e.message} (${url})`);
       await sleep(500 * a);
     }
   }
 };
-const dl = async (url, file) => {
+const dl = async (url, file, tries = 4) => {
   for (let a = 1; ; a++) {
     try {
       const r = await nf(url, { headers: { 'User-Agent': UA } });
@@ -45,7 +45,7 @@ const dl = async (url, file) => {
       fs.renameSync(file + '.part', file);
       return;
     } catch (e) {
-      if (a >= 4) throw new Error(`${e.message} (${url})`);
+      if (a >= tries) throw new Error(`${e.message} (${url})`);
       await sleep(600 * a);
     }
   }
@@ -96,9 +96,9 @@ async function mrInstall(id, kind = 'mod', seen = new Set()) {
 }
 
 /* ---------- CurseForge ---------- */
-const cf = (p) => {
-  if (!cfg.curseKey) throw new Error('Укажи API-ключ CurseForge в настройках');
-  return get('https://api.curseforge.com/v1' + p, { 'x-api-key': cfg.curseKey });
+const cf = async (p) => {
+  try { return await get('https://api.curseforge.com/v1' + p, { 'x-api-key': CF_KEY }); }
+  catch (e) { throw new Error('CurseForge недоступен, попробуй Modrinth. ' + e.message); }
 };
 async function cfSearch(q, offset, kind = 'mod') {
   const { version, loader } = cfg.profile;
@@ -124,14 +124,39 @@ async function cfInstall(id, kind = 'mod') {
   return [f.fileName];
 }
 
-/* ---------- Fabric / Quilt ---------- */
+/* ---------- Fabric / Quilt (с зеркалом на случай блокировки fabricmc.net) ---------- */
+let mirrorFirst = false;
+async function tryUrls(urls, fn) {
+  const list = mirrorFirst ? [...urls].reverse() : urls;
+  let last;
+  for (const u of list) {
+    try {
+      const r = await fn(u);
+      if (u !== urls[0]) mirrorFirst = true; // основной адрес недоступен: дальше идём сразу в зеркало
+      return r;
+    } catch (e) { last = e; }
+  }
+  throw last;
+}
+const MIRROR = 'https://bmclapi2.bangbang93.com';
 async function ensureLoader(mc, kind) {
-  const base = kind === 'fabric'
-    ? 'https://meta.fabricmc.net/v2/versions/loader/'
-    : 'https://meta.quiltmc.org/v3/versions/loader/';
-  const list = await get(base + mc);
+  const bases = kind === 'fabric'
+    ? ['https://meta.fabricmc.net/v2/versions/loader/', MIRROR + '/fabric-meta/v2/versions/loader/']
+    : ['https://meta.quiltmc.org/v3/versions/loader/', MIRROR + '/quilt-meta/v3/versions/loader/'];
+  const list = await tryUrls(bases, b => get(b + mc, {}, 2));
   if (!list.length) throw new Error(`${kind} не поддерживает ${mc}`);
-  const prof = await get(`${base}${mc}/${list[0].loader.version}/profile/json`);
+  const lv = list[0].loader.version;
+  const prof = await tryUrls(bases, b => get(`${b}${mc}/${lv}/profile/json`, {}, 2));
+  // библиотеки загрузчика качаем заранее, иначе лаунчер упрётся в maven.fabricmc.net
+  const libs = (prof.libraries || []).filter(l => !l.downloads && l.name);
+  await pool(libs, 6, async l => {
+    const [g, a, v, c] = l.name.split(':');
+    const rel = `${g.replace(/\./g, '/')}/${a}/${v}/${a}-${v}${c ? '-' + c : ''}.jar`;
+    const file = path.join(root, 'libraries', rel);
+    if (fs.existsSync(file)) return;
+    const base = (l.url || 'https://maven.fabricmc.net/').replace(/\/?$/, '/');
+    await tryUrls([base + rel, MIRROR + '/maven/' + rel], u => dl(u, file, 2));
+  });
   const dir = path.join(root, 'versions', prof.id);
   fs.mkdirSync(dir, { recursive: true });
   fs.writeFileSync(path.join(dir, prof.id + '.json'), JSON.stringify(prof));
@@ -150,6 +175,19 @@ async function getAuth() {
   }
   return Authenticator.getAuth(cfg.nick || 'Player');
 }
+
+/* ---------- Аргументы JVM ---------- */
+const JAVA_PRESETS = {
+  default: '',
+  optimize: '-XX:+UseG1GC -XX:+ParallelRefProcEnabled -XX:MaxGCPauseMillis=200 -XX:+UnlockExperimentalVMOptions -XX:+DisableExplicitGC -XX:G1NewSizePercent=30 -XX:G1MaxNewSizePercent=40 -XX:G1HeapRegionSize=8M -XX:G1ReservePercent=20 -XX:G1HeapWastePercent=5 -XX:G1MixedGCCountTarget=4 -XX:InitiatingHeapOccupancyPercent=15 -XX:G1MixedGCLiveThresholdPercent=90 -XX:G1RSetUpdatingPauseTimePercent=5 -XX:SurvivorRatio=32 -XX:+PerfDisableSharedMem -XX:MaxTenuringThreshold=1',
+  mods: '-XX:+UseG1GC -XX:+UnlockExperimentalVMOptions -XX:+ParallelRefProcEnabled -XX:+DisableExplicitGC -XX:MaxGCPauseMillis=150 -XX:G1NewSizePercent=40 -XX:G1MaxNewSizePercent=50 -XX:G1HeapRegionSize=16M -XX:G1ReservePercent=15 -XX:InitiatingHeapOccupancyPercent=20 -XX:+UseStringDeduplication',
+  lowend: '-XX:+UseSerialGC -XX:MinHeapFreeRatio=10 -XX:MaxHeapFreeRatio=30',
+};
+const javaArgs = () => {
+  const s = cfg.javaPreset === 'custom' ? (cfg.javaArgs || '') : (JAVA_PRESETS[cfg.javaPreset] || '');
+  return (s.match(/(?:[^\s"]+|"[^"]*")+/g) || []).map(a => a.replace(/"/g, ''));
+};
+ipcMain.handle('javaPresets', () => JAVA_PRESETS);
 
 /* ---------- Язык игры ---------- */
 const GAME_LANG = { ru: 'ru_ru', en: 'en_us', uk: 'uk_ua' };
@@ -325,7 +363,7 @@ ipcMain.handle('play', async () => {
     win.webContents.once('did-finish-load', () => send('crashed', c));
   });
   l.launch({
-    authorization, root, ...(javaPath ? { javaPath } : {}),
+    authorization, root, ...(javaPath ? { javaPath } : {}), customArgs: javaArgs(),
     version: { number: p.version, type: 'release', ...(custom ? { custom } : {}) },
     memory: { max: cfg.ram + 'G', min: '1G' },
     overrides: { gameDirectory: gameDir() },

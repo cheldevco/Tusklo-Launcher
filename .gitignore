@@ -1,0 +1,38 @@
+# Зависимости
+node_modules/
+
+# Сборка electron-builder
+dist/
+out/
+release/
+
+# Логи
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Секреты и локальные настройки
+.env
+.env.*
+config.json
+
+# Недокачанные файлы лаунчера
+*.part
+
+# Кэш и временные файлы
+.cache/
+.tmp/
+*.tmp
+
+# Редакторы и IDE
+.vscode/
+.idea/
+*.swp
+
+# Системные файлы
+.DS_Store
+Thumbs.db
+desktop.ini
+README.md
+
