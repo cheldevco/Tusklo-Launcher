@@ -20,4 +20,5 @@
     "productName": "Tusklo Launcher",
     "files": ["main.js", "preload.js", "index.html", "assets/**"]
   }
+  "license": "MIT",
 }
