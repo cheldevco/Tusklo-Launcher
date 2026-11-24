@@ -5,18 +5,55 @@ const { Client, Authenticator } = require('minecraft-launcher-core');
 const { Auth } = require('msmc');
 
 const UA = 'TuskloLauncher/1.0';
+const crypto = require('crypto');
 const root = path.join(app.getPath('userData'), 'game');
 const cfgFile = path.join(app.getPath('userData'), 'config.json');
-let cfg = {
+const defaultCfg = {
   profile: { name: 'main', version: '1.20.1', loader: 'fabric' },
   installs: [{ id: 'main', name: 'Основная', version: '1.20.1', loader: 'fabric' }], sel: 'main',
-  mode: 'offline', nick: 'Player', account: null, curseKey: '', ram: 4,
-  lang: 'ru', closeOnLaunch: true, javaPreset: 'default', javaArgs: '',
+  mode: 'offline', nick: 'Player', account: null, accounts: [], activeAccountId: null,
+  onboardingComplete: false, curseKey: '', ram: 4,
+  lang: 'ru', closeOnLaunch: true, javaPreset: 'default', javaArgs: '', playBackground: null,
 };
-try { cfg = { ...cfg, ...JSON.parse(fs.readFileSync(cfgFile, 'utf8')) }; } catch {}
+let storedCfg = {};
+let configExisted = fs.existsSync(cfgFile);
+try { storedCfg = JSON.parse(fs.readFileSync(cfgFile, 'utf8')); } catch {}
+let cfg = { ...defaultCfg, ...storedCfg, profile: { ...defaultCfg.profile, ...(storedCfg.profile || {}) } };
+// Миграция старого формата: существующий аккаунт сохраняется при обновлении лаунчера.
+if (configExisted && !Array.isArray(storedCfg.accounts)) {
+  const oldMode = storedCfg.mode === 'ms' && storedCfg.account ? 'ms' : 'offline';
+  cfg.accounts = [{
+    id: crypto.randomUUID(), mode: oldMode, nick: storedCfg.nick || 'Player',
+    ...(oldMode === 'ms' ? { auth: storedCfg.account, uuid: storedCfg.account?.profile?.id || null } : {}),
+  }];
+  cfg.activeAccountId = cfg.accounts[0].id;
+  cfg.onboardingComplete = true;
+}
+if (!Array.isArray(cfg.accounts)) cfg.accounts = [];
+if (cfg.accounts.length && !cfg.accounts.some(a => a.id === cfg.activeAccountId)) cfg.activeAccountId = cfg.accounts[0].id;
+function syncLegacyAccountFields() {
+  const active = cfg.accounts.find(a => a.id === cfg.activeAccountId);
+  if (!active) return;
+  cfg.mode = active.mode;
+  cfg.nick = active.nick;
+  cfg.account = active.mode === 'ms' ? active.auth : null;
+  cfg.onboardingComplete = true;
+}
+syncLegacyAccountFields();
+function publicConfig() {
+  const out = { ...cfg, accounts: cfg.accounts.map(({ id, mode, nick }) => ({ id, mode, nick })) };
+  delete out.account;
+  return out;
+}
 // Ключ CurseForge API. Чтобы заменить, поменяй значение здесь.
 const CF_KEY = '$2a$10$97RosohuBjHvm8dPXRBED.tWFuiQcJrKVIGQq0so6Fl1EZ2o6t3Ja';
-const save = () => fs.writeFileSync(cfgFile, JSON.stringify(cfg, null, 2));
+const save = () => { fs.mkdirSync(path.dirname(cfgFile), { recursive: true }); fs.writeFileSync(cfgFile, JSON.stringify(cfg, null, 2)); };
+const BACKGROUNDS = ['wallpaper-1.jpg','wallpaper-2.jpg','wallpaper-3.jpg','wallpaper-4.jpg','wallpaper-5.jpg'];
+function rotateBackground() {
+  const choices = BACKGROUNDS.filter(name => name !== cfg.playBackground);
+  cfg.playBackground = choices[Math.floor(Math.random() * choices.length)] || BACKGROUNDS[0];
+  save();
+}
 
 let win;
 const send = (ch, d) => win && !win.isDestroyed() && win.webContents.send(ch, d);
@@ -165,15 +202,19 @@ async function ensureLoader(mc, kind) {
 
 /* ---------- Auth ---------- */
 async function getAuth() {
-  if (cfg.mode === 'ms' && cfg.account) {
+  const active = cfg.accounts.find(a => a.id === cfg.activeAccountId);
+  if (!active) throw new Error('Сначала создай или выбери аккаунт.');
+  if (active.mode === 'ms' && active.auth) {
     const am = new Auth('select_account');
-    const x = await am.refresh(cfg.account);
+    const x = await am.refresh(active.auth);
     const t = await x.getMinecraft();
-    cfg.account = x.save();
+    active.auth = x.save();
+    active.nick = t.profile.name;
+    syncLegacyAccountFields();
     save();
     return t.mclc();
   }
-  return Authenticator.getAuth(cfg.nick || 'Player');
+  return Authenticator.getAuth(active.nick || 'Player');
 }
 
 /* ---------- Аргументы JVM ---------- */
@@ -208,11 +249,35 @@ ipcMain.handle('win', (e, a) => {
   else if (a === 'max') (w.isMaximized() ? w.unmaximize() : w.maximize());
   else if (a === 'close') w.close();
 });
-ipcMain.handle('state', () => cfg);
+ipcMain.handle('state', () => publicConfig());
 ipcMain.handle('set', (_, patch) => {
-  cfg = { ...cfg, ...patch, profile: { ...cfg.profile, ...(patch.profile || {}) } };
+  const safePatch = { ...patch };
+  delete safePatch.accounts; delete safePatch.account; delete safePatch.activeAccountId;
+  cfg = { ...cfg, ...safePatch, profile: { ...cfg.profile, ...(safePatch.profile || {}) } };
   save();
-  return cfg;
+  return publicConfig();
+});
+ipcMain.handle('createOfflineAccount', (_, nickname) => {
+  const nick = String(nickname || '').trim();
+  if (!/^[A-Za-z0-9_]{3,16}$/.test(nick)) throw new Error('Ник должен содержать 3–16 символов: латинские буквы, цифры или _.');
+  const account = { id: crypto.randomUUID(), mode: 'offline', nick };
+  cfg.accounts.push(account);
+  cfg.activeAccountId = account.id;
+  syncLegacyAccountFields(); save();
+  return publicConfig();
+});
+ipcMain.handle('switchAccount', (_, id) => {
+  if (!cfg.accounts.some(a => a.id === id)) throw new Error('Аккаунт не найден.');
+  cfg.activeAccountId = id;
+  syncLegacyAccountFields(); save();
+  return publicConfig();
+});
+ipcMain.handle('removeAccount', (_, id) => {
+  if (cfg.accounts.length <= 1) throw new Error('Нельзя удалить последний аккаунт.');
+  cfg.accounts = cfg.accounts.filter(a => a.id !== id);
+  if (cfg.activeAccountId === id) cfg.activeAccountId = cfg.accounts[0].id;
+  syncLegacyAccountFields(); save();
+  return publicConfig();
 });
 ipcMain.handle('versions', async () => {
   const j = await get('https://launchermeta.mojang.com/mc/game/version_manifest_v2.json');
@@ -330,14 +395,124 @@ ipcMain.handle('login', async () => {
   const am = new Auth('select_account');
   const x = await am.launch('electron');
   const t = await x.getMinecraft();
-  cfg.account = x.save();
-  cfg.nick = t.profile.name;
-  cfg.mode = 'ms';
-  save();
-  return cfg;
+  const uuid = t.profile.id || null;
+  let account = cfg.accounts.find(a => uuid && a.uuid === uuid);
+  if (account) {
+    account.auth = x.save(); account.nick = t.profile.name; account.mode = 'ms';
+  } else {
+    account = { id: crypto.randomUUID(), mode: 'ms', nick: t.profile.name, uuid, auth: x.save() };
+    cfg.accounts.push(account);
+  }
+  cfg.activeAccountId = account.id;
+  syncLegacyAccountFields(); save();
+  return publicConfig();
+});
+const crashFile = path.join(app.getPath('userData'), 'last-crash.json');
+let lastCrashReport = null;
+try { lastCrashReport = JSON.parse(fs.readFileSync(crashFile, 'utf8')); } catch {}
+function readTail(file, maxLines = 240) {
+  try { return fs.readFileSync(file, 'utf8').split(/\r?\n/).slice(-maxLines).join('\n'); } catch { return ''; }
+}
+function extractCrashSuggestions(logText) {
+  const found = new Map();
+  // Fabric Loader часто прямо перечисляет пакеты, которые необходимо установить.
+  const installLine = /^\s*-\s*Install\s+([a-z0-9][a-z0-9_.-]*)(?:\s*,\s*(.*?))?\s*\.?\s*$/gim;
+  for (const m of logText.matchAll(installLine)) {
+    const id = m[1].toLowerCase();
+    if (!['minecraft', 'fabricloader', 'quilt_loader', 'java', 'forge', 'neoforge'].includes(id)) {
+      found.set(id, { id, reason: (m[2] || 'Требуется загрузчиком').trim() });
+    }
+  }
+  // Дополнительный разбор диагностического блока обязательных зависимостей.
+  const marker = logText.toLowerCase().indexOf('missing or unsupported mandatory dependencies');
+  if (marker >= 0) {
+    const block = logText.slice(marker, marker + 12000);
+    for (const m of block.matchAll(/Mod ID:\s*['"]?([a-z0-9][a-z0-9_.-]*)/gi)) {
+      const id = m[1].toLowerCase();
+      if (!['minecraft', 'fabricloader', 'quilt_loader', 'java', 'forge', 'neoforge'].includes(id) && !found.has(id)) {
+        found.set(id, { id, reason: 'Указан в списке обязательных зависимостей' });
+      }
+    }
+  }
+  return [...found.values()].filter(item => {
+    try { return !fs.readdirSync(modsDir()).some(f => f.toLowerCase().startsWith(item.id.toLowerCase() + '-') || f.toLowerCase().startsWith(item.id.toLowerCase() + '.')); }
+    catch { return true; }
+  }).slice(0, 12);
+}
+function describeCrash(code, logText, launchError) {
+  if (launchError) return launchError;
+  if (/OutOfMemoryError|Could not reserve enough space|There is insufficient memory/i.test(logText)) return 'Похоже, игре не хватило оперативной памяти. Проверь выделенную память и закрой лишние программы.';
+  if (/UnsupportedClassVersionError|class file version/i.test(logText)) return 'Похоже, выбрана неподходящая версия Java для этой сборки.';
+  if (/ModResolutionException|incompatible mod set|Missing or unsupported mandatory dependencies/i.test(logText)) return 'Загрузчик обнаружил несовместимость или недостающие зависимости модов.';
+  if (/Failed to download|Could not download|SSLHandshakeException/i.test(logText)) return 'Не удалось загрузить один из файлов игры или библиотеки. Проверь подключение к интернету и попробуй исправление.';
+  return `Minecraft завершился с кодом ${code ?? 'неизвестно'}. В логе не удалось однозначно определить причину.`;
+}
+function createCrashReport(code, runtimeLines = [], launchError = '') {
+  const instDir = gameDir();
+  const crashDir = path.join(instDir, 'crash-reports');
+  let reportPath = '';
+  try {
+    reportPath = fs.readdirSync(crashDir).filter(f => f.endsWith('.txt'))
+      .map(f => ({ f, t: fs.statSync(path.join(crashDir, f)).mtimeMs }))
+      .sort((a, b) => b.t - a.t)[0]?.f || '';
+  } catch {}
+  const crashText = reportPath ? readTail(path.join(crashDir, reportPath), 320) : '';
+  const latestText = readTail(path.join(instDir, 'logs', 'latest.log'), 260);
+  const runtimeText = runtimeLines.slice(-160).join('\n');
+  const logText = [crashText, latestText, runtimeText].filter(Boolean).join('\n\n');
+  const suggestions = extractCrashSuggestions(logText);
+  const report = {
+    code: code ?? null, instance: cfg.profile.name, version: cfg.profile.version,
+    loader: cfg.profile.loader, createdAt: new Date().toISOString(),
+    message: describeCrash(code, logText, launchError), suggestions,
+    logTail: logText.slice(-16000), crashReport: reportPath || null,
+  };
+  lastCrashReport = report;
+  try { fs.writeFileSync(crashFile, JSON.stringify(report, null, 2)); } catch {}
+  return report;
+}
+function publishCrash(report) {
+  if (win && !win.isDestroyed()) {
+    if (win.webContents.isLoading()) win.webContents.once('did-finish-load', () => send('crashReport', report));
+    else send('crashReport', report);
+  } else {
+    createWindow();
+    win.webContents.once('did-finish-load', () => send('crashReport', report));
+  }
+}
+ipcMain.handle('lastCrash', () => lastCrashReport);
+ipcMain.handle('clearCrash', () => {
+  lastCrashReport = null;
+  try { fs.unlinkSync(crashFile); } catch {}
+  return true;
+});
+ipcMain.handle('repair', async () => {
+  if (!lastCrashReport) throw new Error('Нет отчёта об ошибке.');
+  if (!lastCrashReport.suggestions.length) throw new Error('В логе не найдены точные названия недостающих модов. Открой лог ошибки для диагностики.');
+  const results = [];
+  for (const suggestion of lastCrashReport.suggestions) {
+    send('repairProgress', `Поиск ${suggestion.id}…`);
+    try {
+      const project = await get(`https://api.modrinth.com/v2/project/${encodeURIComponent(suggestion.id)}`);
+      if (project.project_type !== 'mod') throw new Error('На Modrinth найден проект, но это не мод.');
+      const files = await mrInstall(project.id, 'mod');
+      results.push({ id: suggestion.id, ok: true, files });
+    } catch (error) {
+      results.push({ id: suggestion.id, ok: false, error: error.message });
+    }
+  }
+  const installed = results.filter(r => r.ok);
+  const failed = results.filter(r => !r.ok);
+  lastCrashReport.repairResults = results;
+  try { fs.writeFileSync(crashFile, JSON.stringify(lastCrashReport, null, 2)); } catch {}
+  return { installed, failed, allOk: failed.length === 0 };
 });
 ipcMain.handle('folder', () => { fs.mkdirSync(gameDir(), { recursive: true }); shell.openPath(gameDir()); });
 ipcMain.handle('play', async () => {
+  if (!cfg.accounts.length || !cfg.activeAccountId) throw new Error('Сначала создай аккаунт.');
+  lastCrashReport = null;
+  try { fs.unlinkSync(crashFile); } catch {}
+  try {
   const p = cfg.profile;
   send('log', 'Подготовка…');
   const custom = p.loader !== 'vanilla' ? await ensureLoader(p.version, p.loader) : null;
@@ -346,32 +521,58 @@ ipcMain.handle('play', async () => {
   fs.mkdirSync(gameDir(), { recursive: true });
   setGameLang();
   const l = new Client();
-  l.on('progress', e => send('progress', e));
-  l.on('debug', m => send('log', String(m)));
+  const runtimeLines = [];
+  const remember = value => { runtimeLines.push(String(value)); if (runtimeLines.length > 500) runtimeLines.shift(); };
   let opened = false;
+  let closeHandled = false;
+  l.on('progress', e => send('progress', e));
+  l.on('debug', m => { remember(m); send('log', String(m)); });
   l.on('data', m => {
+    remember(m);
     send('log', String(m));
     if (opened) return;
     opened = true; gameRunning = true;
     if (cfg.closeOnLaunch) setTimeout(() => win && !win.isDestroyed() && win.close(), 3000);
   });
-  l.on('close', c => {
+  l.on('close', async code => {
+    if (closeHandled) return;
+    closeHandled = true;
     gameRunning = false;
-    if (win && !win.isDestroyed()) return send('closed', c);
-    if (!c) return app.quit();
-    createWindow(); // игра упала, пока лаунчер был закрыт: показываем его снова
-    win.webContents.once('did-finish-load', () => send('crashed', c));
+    if (code === 0) {
+      if (win && !win.isDestroyed()) send('closed', code);
+      else app.quit();
+      return;
+    }
+    const report = createCrashReport(code, runtimeLines);
+    publishCrash(report);
   });
   l.launch({
     authorization, root, ...(javaPath ? { javaPath } : {}), customArgs: javaArgs(),
     version: { number: p.version, type: 'release', ...(custom ? { custom } : {}) },
     memory: { max: cfg.ram + 'G', min: '1G' },
     overrides: { gameDirectory: gameDir() },
-  }).catch(e => send('log', 'Ошибка запуска: ' + e.message));
+  }).catch(error => {
+    if (closeHandled) return;
+    closeHandled = true;
+    gameRunning = false;
+    const message = 'Ошибка запуска: ' + error.message;
+    send('log', message);
+    const report = createCrashReport('launch', runtimeLines, message);
+    publishCrash(report);
+  });
+  } catch (error) {
+    gameRunning = false;
+    const message = 'Ошибка подготовки запуска: ' + error.message;
+    send('log', message);
+    const report = createCrashReport('launch', [], message);
+    publishCrash(report);
+    throw error;
+  }
 });
 
 let gameRunning = false;
 function createWindow() {
+  rotateBackground();
   win = new BrowserWindow({
     width: 1100, height: 700, minWidth: 900, minHeight: 600,
     backgroundColor: '#1e1e1f', frame: false, autoHideMenuBar: true,

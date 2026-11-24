@@ -35,9 +35,13 @@ button,input,select{font:inherit;color:inherit}
 .ed small{display:block;font-size:16px;color:var(--dim)}
 .cube{flex:none;width:30px;height:30px;background:linear-gradient(#5f9a45 0 32%,#7a5436 32%);box-shadow:inset -4px -4px 0 rgba(0,0,0,.28),inset 3px 3px 0 rgba(255,255,255,.14)}
 .grow{flex:1}
-.acc{display:flex;gap:10px;align-items:center;padding:12px;border-top:1px solid #000}
-.avatar{width:30px;height:30px;background:linear-gradient(#8a5a3c 0 45%,#4b3626 45%);box-shadow:inset 0 -6px 0 #2f6fbb}
-.acc b{display:block}.acc small{color:var(--dim);font-size:16px}
+.acc{display:grid;grid-template-columns:30px 1fr;gap:8px;align-items:center;padding:12px;border-top:1px solid #000}
+.avatar{display:block;width:30px;height:30px;flex:none;object-fit:cover;image-rendering:pixelated;background:linear-gradient(#8a5a3c 0 45%,#4b3626 45%);border:1px solid #050505;box-shadow:inset 0 -6px 0 #2f6fbb}
+.account-avatar{width:34px;height:34px}
+.account-label{min-width:0;overflow:hidden}
+.account-label b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.acc b{display:block;overflow:hidden;text-overflow:ellipsis}.acc small{color:var(--dim);font-size:14px}
+.acc select{grid-column:1/-1;width:100%;min-width:0;padding:6px;background:var(--panel2);border:2px solid #000;font-size:14px}
 
 /* основное */
 .content{flex:1;display:flex;flex-direction:column;min-width:0}
@@ -49,22 +53,23 @@ button,input,select{font:inherit;color:inherit}
 .view{display:none;min-height:100%}.view.on{display:block}
 
 /* Играть */
-#v-play{position:relative;background:#0b0d12 url(assets/bg.jpg) center/cover no-repeat}
-#v-play:after{content:"";position:absolute;inset:0;background:linear-gradient(rgba(0,0,0,.4),transparent 32%,transparent 60%,rgba(0,0,0,.55))}
-.logo{position:relative;z-index:2;text-align:center;padding-top:7vh}
-.logo h1{font:400 clamp(48px,7vw,80px)/1 var(--font);letter-spacing:6px;text-indent:calc(6px + .125em);color:#ececec;
-  text-shadow:2px 0 #000,-2px 0 #000,0 2px #000,0 -2px #000,2px 2px #000,-2px -2px #000,2px -2px #000,-2px 2px #000}
-.logo span{display:inline-flex;align-items:center;justify-content:center;height:32px;margin-top:8px;padding:0 14px 0 22px;font:400 16px/16px var(--font);letter-spacing:6px;color:#e8e8e8;background:#5a5a5a;border:2px solid #222;box-shadow:inset 0 -3px 0 #3d3d3d}
+#v-play{position:relative;background:#0b0d12 center/cover no-repeat}
+#v-play:after{content:"";position:absolute;inset:0;background:linear-gradient(rgba(0,0,0,.34),transparent 32%,transparent 60%,rgba(0,0,0,.5))}
+.logo{position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;gap:0;text-align:center;padding:4vh 18px 0}
+.minecraft-wordmark{display:block;width:min(54vw,520px);height:auto;object-fit:contain;filter:drop-shadow(0 5px 2px rgba(0,0,0,.48))}
+.edition-wordmark{display:block;width:min(29vw,270px);height:auto;margin-top:-17px;object-fit:contain;filter:drop-shadow(0 3px 1px rgba(0,0,0,.55))}
 
 /* нижняя панель */
 .bar{height:92px;flex:none;background:var(--panel);border-top:1px solid #000;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:0 24px;gap:16px}
 .sel select{width:260px;max-width:100%;background:#1e1e1f;border:2px solid #000;padding:9px 10px;cursor:pointer}
 .sel label{display:block;color:var(--dim);margin-bottom:3px}
-.play{min-width:260px;padding:10px 24px;border:2px solid #000;background:var(--g);cursor:pointer;box-shadow:inset 0 3px 0 var(--gl),inset 0 -4px 0 var(--gd);text-align:center}
+.play{min-width:260px;padding:10px 24px;position:relative;isolation:isolate;border:0;background:#080808;--pixel-fill:var(--g);cursor:pointer;clip-path:polygon(0 6px,6px 6px,6px 0,calc(100% - 6px) 0,calc(100% - 6px) 6px,100% 6px,100% calc(100% - 6px),calc(100% - 6px) calc(100% - 6px),calc(100% - 6px) 100%,6px 100%,6px calc(100% - 6px),0 calc(100% - 6px));text-align:center}
+.play::before{content:"";position:absolute;z-index:-1;inset:2px;pointer-events:none;background:var(--pixel-fill);clip-path:polygon(0 4px,4px 4px,4px 0,calc(100% - 4px) 0,calc(100% - 4px) 4px,100% 4px,100% calc(100% - 4px),calc(100% - 4px) calc(100% - 4px),calc(100% - 4px) 100%,4px 100%,4px calc(100% - 4px),0 calc(100% - 4px));box-shadow:inset 0 3px 0 var(--gl),inset 0 -4px 0 var(--gd)}
 .play b{display:block;font-size:24px;font-weight:400;letter-spacing:2px;text-shadow:0 2px 0 rgba(0,0,0,.4)}
 .play small{display:block;color:#d5e9cd}
-.play:hover:not(:disabled){background:#46992f}
-.play:active:not(:disabled){box-shadow:inset 0 -2px 0 var(--gd),inset 0 2px 0 var(--gl);padding-top:12px}
+.play:hover:not(:disabled){--pixel-fill:#46992f}
+.play:active:not(:disabled){padding-top:12px}
+.play:active:not(:disabled)::before{box-shadow:inset 0 -2px 0 var(--gd),inset 0 2px 0 var(--gl)}
 .play:disabled{filter:grayscale(.5) brightness(.8);cursor:wait}
 .prog{justify-self:end;width:260px;max-width:100%;color:var(--dim)}
 .pbar{height:8px;background:#111;border:1px solid #000;margin-bottom:5px}
@@ -74,10 +79,12 @@ button,input,select{font:inherit;color:inherit}
 /* общие */
 .pad{padding:24px 32px}
 h2{font-size:24px;font-weight:400;margin-bottom:16px}
-.btn{background:var(--panel2);border:2px solid #000;padding:8px 16px;cursor:pointer;box-shadow:inset 0 2px 0 rgba(255,255,255,.12),inset 0 -3px 0 rgba(0,0,0,.35)}
-.btn:hover{background:#4a4b4c}
-.btn.g{background:var(--g);box-shadow:inset 0 2px 0 var(--gl),inset 0 -3px 0 var(--gd)}
-.btn.g:hover{background:#46992f}
+.btn{position:relative;isolation:isolate;background:#080808;--pixel-fill:var(--panel2);border:0;padding:8px 16px;cursor:pointer;clip-path:polygon(0 6px,6px 6px,6px 0,calc(100% - 6px) 0,calc(100% - 6px) 6px,100% 6px,100% calc(100% - 6px),calc(100% - 6px) calc(100% - 6px),calc(100% - 6px) 100%,6px 100%,6px calc(100% - 6px),0 calc(100% - 6px))}
+.btn::before,.seg button::before{content:"";position:absolute;z-index:-1;inset:2px;pointer-events:none;background:var(--pixel-fill);clip-path:polygon(0 4px,4px 4px,4px 0,calc(100% - 4px) 0,calc(100% - 4px) 4px,100% 4px,100% calc(100% - 4px),calc(100% - 4px) calc(100% - 4px),calc(100% - 4px) 100%,4px 100%,4px calc(100% - 4px),0 calc(100% - 4px));box-shadow:inset 0 2px 0 rgba(255,255,255,.12),inset 0 -3px 0 rgba(0,0,0,.35)}
+.btn:hover{--pixel-fill:#4a4b4c}
+.btn.g{--pixel-fill:var(--g)}
+.btn.g::before{box-shadow:inset 0 2px 0 var(--gl),inset 0 -3px 0 var(--gd)}
+.btn.g:hover{--pixel-fill:#46992f}
 .btn:disabled{opacity:.55;cursor:wait}
 input[type=text],input[type=password],input[type=number],.field select{width:100%;background:#1e1e1f;border:2px solid #000;padding:8px 10px}
 label{display:block;color:var(--dim);margin-bottom:4px}
@@ -99,14 +106,34 @@ dialog{margin:auto;background:var(--panel);color:var(--text);border:2px solid #0
 dialog::backdrop{background:rgba(0,0,0,.65)}
 dialog .field{margin-bottom:14px}
 .dlg-act{display:flex;justify-content:flex-end;gap:10px;margin-top:8px}
+.dialog-wide{width:620px;max-height:86vh;overflow:auto}
+.dialog-wide h2{margin-bottom:12px}
+.dialog-wide p{color:var(--dim);margin-bottom:12px}
+.account-list{display:grid;gap:8px;margin:8px 0 14px}
+.account-item{display:grid;grid-template-columns:36px minmax(0,1fr) auto auto;gap:8px;align-items:center;background:var(--panel);padding:9px;border:2px solid #000}
+.account-item small{display:block;color:var(--dim)}
+.account-add{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:end}
+.account-add input{width:100%}
+.welcome-dialog{width:500px}
+.welcome-actions{display:grid;gap:10px;margin:16px 0}
+.welcome-actions .btn{width:100%;padding:12px}
+.error-text{color:#ff8a80;min-height:20px;font-size:14px}
+.crash-dialog{width:720px;max-height:88vh;overflow:auto}
+.crash-mod{display:flex;justify-content:space-between;gap:12px;padding:9px;background:var(--panel);border:2px solid #000;margin:7px 0}
+.crash-mod small{display:block;color:var(--dim)}
+.crash-log{margin-top:12px}
+.crash-log summary{cursor:pointer;color:var(--dim);padding:8px 0}
+.crash-log pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#111;padding:12px;max-height:190px;overflow:auto;font:12px/1.4 Consolas,monospace;color:#ddd}
+.repair-result{padding:9px 0;color:var(--dim)}
+@media(max-width:700px){.account-item{grid-template-columns:36px minmax(0,1fr) auto}.account-item .remove-account{grid-column:3}.account-add{grid-template-columns:1fr}.crash-dialog{width:94vw}}
 
 /* моды */
 .sbar{display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap}.sbar input{flex:1;min-width:160px}
 .seg{display:flex}
-.seg button{background:var(--panel2);border:2px solid #000;padding:8px 14px;cursor:pointer;color:var(--dim)}
-.seg button.on[data-k]{background:var(--g);color:#fff}
-.seg button.on[data-s=modrinth]{background:#1bd96a;color:#04200f}
-.seg button.on[data-s=curseforge]{background:#f16436;color:#2a0c02}
+.seg button{position:relative;isolation:isolate;background:#080808;--pixel-fill:var(--panel2);border:0;padding:8px 14px;cursor:pointer;color:var(--dim);clip-path:polygon(0 6px,6px 6px,6px 0,calc(100% - 6px) 0,calc(100% - 6px) 6px,100% 6px,100% calc(100% - 6px),calc(100% - 6px) calc(100% - 6px),calc(100% - 6px) 100%,6px 100%,6px calc(100% - 6px),0 calc(100% - 6px))}
+.seg button.on[data-k]{--pixel-fill:var(--g);color:#fff}
+.seg button.on[data-s=modrinth]{--pixel-fill:#1bd96a;color:#04200f}
+.seg button.on[data-s=curseforge]{--pixel-fill:#f16436;color:#2a0c02}
 .layout{display:grid;grid-template-columns:1fr 240px;gap:20px;align-items:start}
 .mod{display:grid;grid-template-columns:56px 1fr auto;gap:14px;align-items:center;padding:12px;background:var(--panel);border:2px solid #000;margin-bottom:8px}
 .mod img,.ph{width:56px;height:56px;background:#1e1e1f;object-fit:cover}
@@ -138,7 +165,8 @@ dialog .field{margin-bottom:14px}
     <button class="ed on" id="edJava"><span class="cube"></span><span>Minecraft<small>Java Edition</small></span></button>
     <div class="grow"></div>
     <button class="ed" id="edSet"><span style="width:30px;text-align:center">⚙</span><span data-i="settings"></span></button>
-    <div class="acc"><span class="avatar"></span><div><b id="who">—</b><small id="mode"></small></div></div>
+    <div class="acc"><img class="avatar" id="headAvatar" alt="Minecraft avatar"><div><b id="who">—</b><small id="mode"></small></div>
+      <select id="accountSelect" aria-label="Выбрать аккаунт"></select></div>
   </aside>
 
   <div class="content">
@@ -149,7 +177,10 @@ dialog .field{margin-bottom:14px}
     </header>
 
     <div class="views">
-      <div class="view on" id="v-play"><div class="logo"><h1>TUSKLO</h1><span>LAUNCHER</span></div></div>
+      <div class="view on" id="v-play"><div class="logo" aria-label="Minecraft Java Edition">
+        <img class="minecraft-wordmark" src="assets/minecraft-logo.png" alt="Minecraft">
+        <img class="edition-wordmark" src="assets/java-edition.png" alt="Java Edition">
+      </div></div>
 
       <div class="view" id="v-inst"><div class="pad">
         <div class="head"><h2 style="margin:0" data-i="inst"></h2><button class="btn g" id="newInst" data-i="newInst"></button></div>
@@ -179,11 +210,18 @@ dialog .field{margin-bottom:14px}
             <div class="hint" data-i="langHint"></div></div>
           <div><label class="chk s"><input type="checkbox" id="closeOn"><span data-i="closeOn"></span></label>
             <div class="hint" data-i="closeHint"></div></div>
-          <div><label data-i="account"></label><button class="btn g" id="ms" data-i="msLogin"></button>
-            <div class="hint" data-i="msHint"></div></div>
-          <div class="field"><label for="nick" data-i="offNick"></label><input type="text" id="nick">
+          <div class="field">
+            <label data-i="accountManager"></label>
+            <div class="account-list" id="accountsList"></div>
+            <div class="hint" data-i="msHint"></div>
+            <button class="btn g" id="ms" style="margin-top:10px" data-i="addMicrosoft"></button>
+          </div>
+          <div class="field">
+            <label for="nick" data-i="offNick"></label>
+            <div class="account-add"><input type="text" id="nick" maxlength="16" placeholder="Steve_123">
+              <button class="btn" id="off" data-i="addOffline"></button></div>
             <div class="hint" data-i="offHint"></div>
-            <button class="btn" id="off" style="margin-top:8px" data-i="useOff"></button></div>
+          </div>
           <div class="field"><label for="ram" data-i="ram"></label><input type="number" id="ram" min="1" max="32"></div>
           <div class="field"><label for="jp" data-i="javaPreset"></label>
             <select id="jp"><option value="default" data-i="pDefault"></option><option value="optimize" data-i="pOpt"></option><option value="mods" data-i="pMods"></option><option value="lowend" data-i="pLow"></option><option value="custom" data-i="pCustom"></option></select>
@@ -203,6 +241,35 @@ dialog .field{margin-bottom:14px}
   </div>
 </div>
 
+
+<dialog id="welcomeDlg" class="welcome-dialog">
+  <h2 data-i="welcomeTitle"></h2>
+  <p data-i="welcomeText"></p>
+  <div class="welcome-actions">
+    <button class="btn g" id="welcomeMs" data-i="welcomeMicrosoft"></button>
+    <div class="field">
+      <label for="welcomeNick" data-i="offNick"></label>
+      <input type="text" id="welcomeNick" maxlength="16" placeholder="Steve_123" style="width:100%">
+      <button class="btn" id="welcomeOff" style="width:100%;margin-top:8px" data-i="welcomeOffline"></button>
+    </div>
+  </div>
+  <div id="welcomeError" class="error-text"></div>
+</dialog>
+
+<dialog id="crashDlg" class="crash-dialog">
+  <h2 data-i="crashTitle"></h2>
+  <p id="crashMessage"></p>
+  <div><b data-i="crashBuild"></b>: <span id="crashBuildInfo"></span></div>
+  <h3 style="margin-top:14px" data-i="crashMissing"></h3>
+  <div id="crashMods"></div>
+  <div id="repairResult" class="repair-result"></div>
+  <details class="crash-log"><summary data-i="showCrashLog"></summary><pre id="crashLog"></pre></details>
+  <div class="dlg-act">
+    <button class="btn" id="crashClose" data-i="closeCrash"></button>
+    <button class="btn g" id="crashFix" data-i="repairBuild"></button>
+  </div>
+</dialog>
+
 <dialog id="dlg">
   <h2 data-i="newInst"></h2>
   <div class="field"><label for="nName" data-i="name"></label><input type="text" id="nName"></div>
@@ -221,6 +288,42 @@ ru:{settings:'Настройки',play:'Играть',inst:'Установки',
 en:{settings:'Settings',play:'Play',inst:'Installations',mods:'Mods & resource packs',installation:'Installation',playBtn:'PLAY',starting:'STARTING…',ready:'Ready to play',willDl:'will be downloaded',offline:'Offline',newInst:'New installation',dled:'downloaded',notDled:'not downloaded',download:'Download',unlist:'Remove from list',name:'Name',version:'Version',snaps:'Snapshots',oldV:'Old versions',loader:'Loader',vanilla:'Vanilla (no mods)',cancel:'Cancel',create:'Create',untitled:'Untitled',modsT:'Mods',packsT:'Resource packs',find:'Search',modPh:'Mod name, e.g. Sodium',packPh:'Resource pack name, e.g. Faithful',install:'Install',dling:'Downloading…',installed:'Installed',installedH:'Installed',none:'Nothing yet',openFolder:'Open game folder',searching:'Searching…',notFound:'Nothing found for this version. Try another query.',dlsN:'downloads',mln:'M',thou:'K',packHint:'Enable it in game: Options → Resource Packs',account:'Account',msLogin:'Sign in with Microsoft',msHint:'Licensed sign-in: works on any server.',offNick:'Offline nickname',offHint:'Unlicensed mode: singleplayer and local servers only.',useOff:'Use offline nickname',ram:'Memory, GB',language:'Language (launcher and game)',langHint:'The game language is applied on the next launch.',closeOn:'Close the launcher when the game starts',closeHint:'Frees up RAM. The launcher reopens if the game crashes.',save:'Save',saved:'Saved',dlDone:'Version {v} downloaded',dlFail:'Download failed: ',dlProg:'Downloading {id}: {p}%',javaProg:'Downloading Java: {p}%',closed:'Game closed',crashed:'The game exited with an error',loggedIn:'Signed in: ',loginFail:'Sign-in failed: ',offOn:'Offline mode enabled',noVers:'Cannot reach the Mojang version list',javaPreset:'Java (JVM) profile',javaArgs:'JVM arguments',javaHint:'Applied on the next launch. Memory (-Xmx) is set by the field above.',noArgs:'no extra arguments',pDefault:'Default',pOpt:'Optimization',pMods:'Modpacks',pLow:'Low-end PC',pCustom:'Custom arguments',d_default:'No extra arguments.',d_optimize:'Tuned G1 garbage collector: helps reduce stutters.',d_mods:'For heavy modpacks: more room for short-lived objects.',d_lowend:'For weak PCs: lower memory use, FPS may be slightly lower.',d_custom:'Enter your own arguments separated by spaces.'},
 uk:{settings:'Налаштування',play:'Грати',inst:'Встановлення',mods:'Моди та ресурспаки',installation:'Встановлення',playBtn:'ГРАТИ',starting:'ЗАПУСК…',ready:'Готово до запуску',willDl:'буде завантажено',offline:'Офлайн',newInst:'Нове встановлення',dled:'завантажено',notDled:'не завантажено',download:'Завантажити',unlist:'Прибрати зі списку',name:'Назва',version:'Версія',snaps:'Снапшоти',oldV:'Старі версії',loader:'Завантажувач',vanilla:'Без модів',cancel:'Скасувати',create:'Створити',untitled:'Без назви',modsT:'Моди',packsT:'Ресурспаки',find:'Знайти',modPh:'Назва моду, наприклад Sodium',packPh:'Назва ресурспаку, наприклад Faithful',install:'Встановити',dling:'Завантажуємо…',installed:'Встановлено',installedH:'Встановлено',none:'Поки порожньо',openFolder:'Відкрити теку гри',searching:'Шукаємо…',notFound:'Нічого не знайдено для цієї версії. Спробуй інший запит.',dlsN:'завантажень',mln:'млн',thou:'тис.',packHint:'Увімкни в грі: Налаштування → Ресурспаки',account:'Акаунт',msLogin:'Увійти через Microsoft',msHint:'Ліцензійний вхід: працює на будь-яких серверах.',offNick:'Офлайн-нік',offHint:'Режим без ліцензії: одиночна гра та локальні сервери.',useOff:'Використати офлайн-нік',ram:'Пам’ять, ГБ',language:'Мова (лаунчер і гра)',langHint:'Мова гри застосовується під час наступного запуску.',closeOn:'Закривати лаунчер під час запуску гри',closeHint:'Звільняє оперативну пам’ять. Лаунчер відкриється знову, якщо гра завершиться з помилкою.',save:'Зберегти',saved:'Збережено',dlDone:'Версію {v} завантажено',dlFail:'Не вдалося завантажити: ',dlProg:'Завантаження {id}: {p}%',javaProg:'Завантаження Java: {p}%',closed:'Гру закрито',crashed:'Гра завершилася з помилкою',loggedIn:'Вхід виконано: ',loginFail:'Вхід не виконано: ',offOn:'Офлайн-режим увімкнено',noVers:'Немає зв’язку зі списком версій Mojang',javaPreset:'Профіль Java (JVM)',javaArgs:'Аргументи JVM',javaHint:'Застосовуються під час наступного запуску. Обсяг пам’яті (-Xmx) задається полем вище.',noArgs:'немає додаткових аргументів',pDefault:'За замовчуванням',pOpt:'Оптимізація',pMods:'Збірки з модами',pLow:'Слабкий ПК',pCustom:'Власні аргументи',d_default:'Без додаткових аргументів.',d_optimize:'Налаштування збирача сміття G1: допомагає зменшити підвисання.',d_mods:'Для важких збірок: більше місця під короткоживучі об’єкти.',d_lowend:'Для слабких ПК: менше споживання пам’яті, FPS може бути трохи нижчим.',d_custom:'Впиши власні аргументи через пробіл.'}
 };
+Object.assign(I18N.ru, {
+  accountManager:'Аккаунты (мультиаккаунт)', addMicrosoft:'Добавить Microsoft аккаунт', addOffline:'Добавить офлайн',
+  activeAccount:'Выбран', selectAccount:'Выбрать', removeAccount:'Удалить', welcomeTitle:'Добро пожаловать в Tusklo Launcher!',
+  welcomeText:'Для начала создай аккаунт Minecraft. Позже можно будет добавить несколько и переключаться между ними.',
+  welcomeMicrosoft:'Войти через Microsoft', welcomeOffline:'Создать офлайн-аккаунт', welcomeError:'Не удалось создать аккаунт: ',
+  crashTitle:'Сборка завершилась с ошибкой', crashBuild:'Сборка', crashMissing:'Что нужно установить',
+  noMissingMods:'В логе не удалось определить конкретные недостающие моды. Посмотри подробный лог ниже.',
+  repairBuild:'Исправить сборку', closeCrash:'Закрыть', showCrashLog:'Показать лог ошибки',
+  repairWorking:'Проверяем и устанавливаем недостающие моды…', repairDone:'Установлено: ', repairSome:'Не всё удалось установить: ',
+  repairNone:'Не найдено модов для автоматической установки.', repairRestart:'Запусти сборку ещё раз после исправления.',
+  accountRemoved:'Аккаунт удалён', accountAdded:'Аккаунт добавлен: ', accountSwitched:'Аккаунт выбран: '
+});
+Object.assign(I18N.en, {
+  accountManager:'Accounts (multi-account)', addMicrosoft:'Add Microsoft account', addOffline:'Add offline',
+  activeAccount:'Selected', selectAccount:'Select', removeAccount:'Remove', welcomeTitle:'Welcome to Tusklo Launcher!',
+  welcomeText:'Create a Minecraft account to get started. You can add more accounts and switch between them later.',
+  welcomeMicrosoft:'Sign in with Microsoft', welcomeOffline:'Create offline account', welcomeError:'Could not create account: ',
+  crashTitle:'The installation crashed', crashBuild:'Installation', crashMissing:'What needs to be installed',
+  noMissingMods:'No exact missing mod could be identified from the log. See the detailed log below.',
+  repairBuild:'Repair installation', closeCrash:'Close', showCrashLog:'Show crash log',
+  repairWorking:'Checking and installing missing mods…', repairDone:'Installed: ', repairSome:'Some items could not be installed: ',
+  repairNone:'No mods were identified for automatic installation.', repairRestart:'Launch the installation again after repair.',
+  accountRemoved:'Account removed', accountAdded:'Account added: ', accountSwitched:'Selected account: '
+});
+Object.assign(I18N.uk, {
+  accountManager:'Акаунти (мультиакаунт)', addMicrosoft:'Додати Microsoft акаунт', addOffline:'Додати офлайн',
+  activeAccount:'Обрано', selectAccount:'Обрати', removeAccount:'Видалити', welcomeTitle:'Ласкаво просимо до Tusklo Launcher!',
+  welcomeText:'Створи акаунт Minecraft для початку. Пізніше можна буде додати кілька акаунтів і перемикатися між ними.',
+  welcomeMicrosoft:'Увійти через Microsoft', welcomeOffline:'Створити офлайн-акаунт', welcomeError:'Не вдалося створити акаунт: ',
+  crashTitle:'Встановлення завершилося з помилкою', crashBuild:'Встановлення', crashMissing:'Що потрібно встановити',
+  noMissingMods:'У журналі не вдалося визначити конкретні відсутні моди. Переглянь докладний журнал нижче.',
+  repairBuild:'Виправити збірку', closeCrash:'Закрити', showCrashLog:'Показати журнал помилки',
+  repairWorking:'Перевіряємо та встановлюємо відсутні моди…', repairDone:'Встановлено: ', repairSome:'Не все вдалося встановити: ',
+  repairNone:'Не знайдено модів для автоматичного встановлення.', repairRestart:'Запусти збірку ще раз після виправлення.',
+  accountRemoved:'Акаунт видалено', accountAdded:'Акаунт додано: ', accountSwitched:'Обрано акаунт: '
+});
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const LD={vanilla:'Vanilla',fabric:'Fabric',quilt:'Quilt'};
@@ -240,7 +343,7 @@ function applyLang(){
   $$('[data-i]').forEach(e=>e.textContent=t(e.dataset.i));
   $('#kt').textContent=t(kind==='mod'?'modsT':'packsT');
   $('#q').placeholder=t(kind==='mod'?'modPh':'packPh');
-  who();drawBar();drawInst();ctx();renderRes();listMods();jpUpdate();
+  who();drawAccounts();drawBar();drawInst();ctx();renderRes();listMods();jpUpdate();
 }
 $('#lang').onchange=async e=>{S=await api.call('set',{lang:e.target.value});applyLang();$('#log').textContent=t('ready')};
 $('#closeOn').onchange=async e=>{S=await api.call('set',{closeOnLaunch:e.target.checked})};
@@ -265,7 +368,27 @@ function show(v){
 $$('.tab').forEach(b=>b.onclick=()=>show(b.dataset.v));
 $('#edJava').onclick=()=>show('play');$('#edSet').onclick=()=>show('set');
 
-function who(){$('#who').textContent=S.nick;$('#mode').textContent=S.mode==='ms'?'Microsoft':t('offline')}
+function activeAccount(){return (S.accounts||[]).find(a=>a.id===S.activeAccountId)||null}
+function who(){const a=activeAccount();$('#who').textContent=a?.nick||'—';$('#mode').textContent=a?.mode==='ms'?'Microsoft':a?t('offline'):t('account')}
+function bindAvatar(img){
+  img.classList.remove('avatar-fallback');
+  img.onerror=()=>{img.onerror=null;img.classList.add('avatar-fallback')};
+  img.src='assets/player-avatar.png';
+}
+function refreshAvatars(){
+  const active=activeAccount();
+  bindAvatar($('#headAvatar'));
+  $$('#accountsList .account-avatar').forEach(img=>bindAvatar(img));
+}
+function drawAccounts(){
+  const accounts=S.accounts||[];
+  $('#accountSelect').innerHTML=accounts.map(a=>`<option value="${esc(a.id)}">${esc(a.nick)} · ${a.mode==='ms'?'Microsoft':t('offline')}</option>`).join('');
+  $('#accountSelect').value=S.activeAccountId||'';
+  $('#accountsList').innerHTML=accounts.map(a=>`<div class="account-item"><img class="avatar account-avatar" data-nick="${esc(a.nick)}" alt=""><div class="account-label"><b>${esc(a.nick)}</b><small>${a.mode==='ms'?'Microsoft':t('offline')}${a.id===S.activeAccountId?' · '+t('activeAccount'):''}</small></div>
+    ${a.id===S.activeAccountId?'<span class="ok">✓</span>':`<button class="btn" data-account-select="${esc(a.id)}">${t('selectAccount')}</button>`}
+    ${accounts.length>1?`<button class="btn remove-account" data-account-remove="${esc(a.id)}">✕</button>`:''}</div>`).join('')||`<div class="hint">${t('none')}</div>`;
+  who();refreshAvatars();
+}
 function drawBar(){
   $('#cur').innerHTML=S.installs.map(i=>`<option value="${esc(i.id)}">${esc(i.name)} (${esc(label(i))})</option>`).join('');
   $('#cur').value=S.sel;
@@ -275,6 +398,45 @@ function drawBar(){
 }
 async function pick(id){S=await api.call('select',{installs:S.installs,sel:id});found=[];drawBar();drawInst()}
 $('#cur').onchange=e=>pick(e.target.value);
+$('#accountSelect').onchange=async e=>{
+  try{S=await api.call('switchAccount',e.target.value);drawAccounts();toast(t('accountSwitched')+S.nick)}
+  catch(err){toast(err.message,1)}
+};
+$('#accountsList').onclick=async e=>{
+  const select=e.target.closest('[data-account-select]'),remove=e.target.closest('[data-account-remove]');
+  try{
+    if(select){S=await api.call('switchAccount',select.dataset.accountSelect);drawAccounts();toast(t('accountSwitched')+S.nick)}
+    if(remove){S=await api.call('removeAccount',remove.dataset.accountRemove);drawAccounts();toast(t('accountRemoved'))}
+  }catch(err){toast(err.message,1)}
+};
+async function addOfflineAccount(nick, firstRun=false){
+  try{
+    S=await api.call('createOfflineAccount',nick);$('#nick').value='';drawAccounts();
+    if(firstRun)$('#welcomeDlg').close();
+    toast(t('accountAdded')+S.nick);
+    return true;
+  }catch(err){
+    if(firstRun)$('#welcomeError').textContent=t('welcomeError')+err.message;
+    else toast(err.message,1);
+    return false;
+  }
+}
+async function addMicrosoftAccount(firstRun=false){
+  try{
+    S=await api.call('login');drawAccounts();
+    if(firstRun)$('#welcomeDlg').close();
+    toast(t('loggedIn')+S.nick);return true;
+  }catch(err){
+    if(firstRun)$('#welcomeError').textContent=t('loginFail')+err.message;
+    else toast(t('loginFail')+err.message,1);
+    return false;
+  }
+}
+$('#ms').onclick=()=>addMicrosoftAccount(false);
+$('#off').onclick=()=>addOfflineAccount($('#nick').value.trim(),false);
+$('#welcomeMs').onclick=()=>addMicrosoftAccount(true);
+$('#welcomeOff').onclick=()=>addOfflineAccount($('#welcomeNick').value.trim(),true);
+$('#welcomeDlg').addEventListener('cancel',e=>e.preventDefault());
 
 /* скачивание и запуск */
 async function download(i){
@@ -297,7 +459,32 @@ api.on('dl',e=>{dlp[e.id]=e.done/e.total;const p=Math.round(dlp[e.id]*100);
 api.on('progress',e=>{if(e.total)$('#pb').style.width=Math.round(e.task/e.total*100)+'%'});
 api.on('log',m=>{$('#log').textContent=m.trim().split('\n').pop()});
 api.on('closed',()=>{ended();$('#log').textContent=t('closed')});
-api.on('crashed',()=>{ended();$('#log').textContent=t('crashed');toast(t('crashed'),1)});
+function showCrashReport(report){
+  ended();
+  $('#log').textContent=t('crashed');
+  $('#crashMessage').textContent=report.message||t('crashed');
+  $('#crashBuildInfo').textContent=`${report.instance} · Minecraft ${report.version} · ${report.loader} · код: ${report.code??'—'}`;
+  $('#crashMods').innerHTML=report.suggestions?.length?report.suggestions.map(m=>`<div class="crash-mod"><div><b>${esc(m.id)}</b><small>${esc(m.reason||'')}</small></div><span class="ok">↓</span></div>`).join(''):`<div class="hint">${t('noMissingMods')}</div>`;
+  $('#crashLog').textContent=report.logTail||'Лог пуст или не найден.';
+  $('#repairResult').textContent='';
+  $('#crashFix').disabled=!report.suggestions?.length;
+  $('#crashFix').textContent=t('repairBuild');
+  if(!$('#crashDlg').open)$('#crashDlg').showModal();
+}
+api.on('crashReport',showCrashReport);
+api.on('repairProgress',m=>{$('#repairResult').textContent=m});
+$('#crashClose').onclick=async()=>{await api.call('clearCrash');$('#crashDlg').close()};
+$('#crashFix').onclick=async()=>{
+  const b=$('#crashFix');b.disabled=true;$('#repairResult').textContent=t('repairWorking');
+  try{
+    const result=await api.call('repair');
+    const ok=result.installed.map(x=>x.id).join(', ');
+    const bad=result.failed.map(x=>x.id+': '+x.error).join(' | ');
+    $('#repairResult').textContent=(ok?t('repairDone')+ok+'. ':'')+(bad?t('repairSome')+bad:t('repairRestart'));
+    b.textContent=result.allOk?'✓ '+t('repairDone'):t('repairBuild');
+    have=new Set(await api.call('installed'));listMods();
+  }catch(err){$('#repairResult').textContent=err.message;b.disabled=false}
+};
 
 /* установки */
 function drawInst(){
@@ -364,15 +551,17 @@ $('#modInst').onclick=async e=>{const f=e.target.dataset.f;if(f){await api.call(
 $('#open').onclick=()=>api.call('folder');
 
 /* настройки */
-$('#ms').onclick=async()=>{try{S=await api.call('login');who();$('#nick').value=S.nick;toast(t('loggedIn')+S.nick)}catch(e){toast(t('loginFail')+e.message,1)}};
-$('#off').onclick=async()=>{S=await api.call('set',{mode:'offline',nick:$('#nick').value.trim()||'Player'});who();toast(t('offOn'))};
 $('#save').onclick=async()=>{S=await api.call('set',{ram:+$('#ram').value||4});toast(t('saved'))};
 
 (async()=>{
   S=await api.call('state');
+  const bgName=/^wallpaper-[1-5]\.jpg$/.test(S.playBackground||'')?S.playBackground:'wallpaper-1.jpg';
+  $('#v-play').style.backgroundImage=`url("assets/backgrounds/${bgName}")`;
   have=new Set(await api.call('installed'));JP=await api.call('javaPresets');
   $('#nick').value=S.nick;$('#ram').value=S.ram;$('#lang').value=S.lang;$('#jp').value=S.javaPreset||'default';$('#closeOn').checked=S.closeOnLaunch!==false;
-  applyLang();$('#log').textContent=t('ready');
+  applyLang();drawAccounts();$('#log').textContent=t('ready');
+  if(!S.accounts?.length || !S.onboardingComplete){$('#welcomeDlg').showModal()}
+  else {const crash=await api.call('lastCrash');if(crash)showCrashReport(crash)}
   try{V=await api.call('versions')}catch{toast(t('noVers'),1)}
 })();
 </script>
